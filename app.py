@@ -18,8 +18,8 @@ import bson
 
 app = Flask(__name__)
 
-app.config['MONGO_DBNAME'] = 'foodb'
-app.config['MONGO_URI'] = 'mongodb://localhost:27017/foodb'
+app.config['MONGO_DBNAME'] = 'ads'
+app.config['MONGO_URI'] = 'mongodb://rubenbt:ads1234@ds115353.mlab.com:15353/ads'
 
 mongo = PyMongo(app)
 
