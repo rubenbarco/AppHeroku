@@ -13,7 +13,6 @@ from flask_login import login_required
 import json
 import bson
 
-
 #... skipping ahead. Keep previous code from app.py here.
 
 app = Flask(__name__)
@@ -33,10 +32,6 @@ def product_edit(product_id):
 @app.route( '/products/create/', methods=['GET', 'POST'])
 def product():
   return 'Form to create a new product.'
-
-
-from flask import Flask, make_response,request
-
 
 @app.route('/string/')
 def return_string():
@@ -96,8 +91,6 @@ def product_create():
   # Either first load or validation error at this point.
   return render_template('product/edit.html', form=form)
 
-from bson.objectid import ObjectId
-
 @app.route('/products/<product_id>/')
 def product_detail(product_id):
   """Provide HTML page with a given product."""
@@ -130,8 +123,6 @@ def product_delete(product_id):
     return response
   return jsonify({'status': 'OK'})
 
-import bson
-
 @app.errorhandler(404)
 def error_not_found(error):
   return render_template('error/not_found.html'), 404
@@ -140,28 +131,17 @@ def error_not_found(error):
 def error_not_found(error):
   return render_template('error/not_found.html'), 404
 
-from flask import render_template
-
 @app.route('/')
 def index():
   return redirect(url_for('products_list'))
 
-from flask_login import LoginManager, current_user
-from flask_login import login_user, logout_user
-
-from forms import LoginForm
-from models import User
-
 app.config['SECRET_KEY'] = 'enydM2ANhdcoKwdVa0jWvEsbPFuQpMjf' # Create your own.
 app.config['SESSION_PROTECTION'] = 'strong'
-
 
 # Use Flask-Login to track current user in Flask's session.
 login_manager = LoginManager()
 login_manager.setup_app(app)
 login_manager.login_view = 'login'
-
-
 
 @login_manager.user_loader
 def load_user(user_id):
