@@ -23,56 +23,20 @@ app.config['MONGO_URI'] = 'mongodb://rubenbt:ads1234@ds115353.mlab.com:15353/ads
 
 mongo = PyMongo(app)
 
-app.config['SECRET_KEY'] = 'enydM2ANhdcoKwdVa0jWvEsbPFuQpMjf' # Create your own.
-app.config['SESSION_PROTECTION'] = 'strong'
-
-# Use Flask-Login to track current user in Flask's session.
-login_manager = LoginManager()
-login_manager.setup_app(app)
-login_manager.login_view = 'login'
-
-@login_manager.user_loader
-def load_user(user_id):
-  """Flask-Login hook to load a User instance from ID."""
-  u = mongo.db.users.find_one({"username": user_id})
-  if not u:
-        return None
-  return User(u['username'])
-
-@app.route('/')
-def index():
-  return redirect(url_for('products_list'))
-
-# @app.route('/products/')
-# def products_list():
-#   return 'Listing of all products we have.'
-
-# @app.route('/products/<product_id>/')
-# def product_detail(product_id):
-#   return 'Detail of product     #{}.'.format(product_id)
-
-@app.route( 
+@app.route(
   '/products/<product_id>/edit/',
   methods=['GET', 'POST'])
 @login_required
 def product_edit(product_id):
-  return 'Form to edit product #{}.'.format(product_id)
+  return 'Form to edit product #.'.format(product_id)
 
-# @app.route( '/products/create/', methods=['GET', 'POST'])
-# def product():
-#   return 'Form to create a new product.'
+@app.route( '/products/create/', methods=['GET', 'POST'])
+def product():
+  return 'Form to create a new product.'
 
-@app.route('/products/<product_id>/delete/', methods=['DELETE'])
-@login_required
-def product_delete(product_id):
-  """Delete record using HTTP DELETE, respond with JSON."""
-  result = mongo.db.products.delete_one({ "_id": ObjectId(product_id) })
-  if result.deleted_count == 0:
-    # Abort with Not Found, but with simple JSON response.
-    response = jsonify({'status': 'Not Found'})
-    response.status = 404
-    return response
-  return jsonify({'status': 'OK'})
+
+from flask import Flask, make_response,request
+
 
 @app.route('/string/')
 def return_string():
@@ -92,16 +56,6 @@ def return_tuple(resource):
   return 'Hello, world! \n' + dump, 200, {'Content-Type':
     'text/plain'}
 
-@app.before_request
-def callme_before_every_request():
-  # Demo only: the before_request hook.
-  app.logger.debug(dump_request_detail(request))
-
-@app.after_request
-def callme_after_every_response(response):
-  # Demo only: the after_request hook.
-  app.logger.debug('# After Request #\n' + repr(response))
-  return response
 
 def dump_request_detail(request):
   request_detail = """
@@ -114,14 +68,21 @@ request.form: {request.form}
 request.user_agent: {request.user_agent}
 request.files: {request.files}
 request.is_xhr: {request.is_xhr}
-
 ## request.headers ##
 {request.headers}
   """.format(request=request).strip()
   return request_detail
 
-if __name__ == '__main__':
-    app.run()
+@app.before_request
+def callme_before_every_request():
+  # Demo only: the before_request hook.
+  app.logger.debug(dump_request_detail(request))
+
+@app.after_request
+def callme_after_every_response(response):
+  # Demo only: the after_request hook.
+  app.logger.debug('# After Request #\n' + repr(response))
+  return response
 
 @app.route('/products/create/', methods=['GET', 'POST'])
 @login_required
@@ -135,6 +96,8 @@ def product_create():
   # Either first load or validation error at this point.
   return render_template('product/edit.html', form=form)
 
+from bson.objectid import ObjectId
+
 @app.route('/products/<product_id>/')
 def product_detail(product_id):
   """Provide HTML page with a given product."""
@@ -147,14 +110,66 @@ def product_detail(product_id):
   return render_template('product/detail.html',
     product=product)
 
-
-@app.route('/products/')  
+@app.route('/products/')
 def products_list():
   """Provide HTML listing of all Products."""
   # Query: Get all Products objects, sorted by date.
   products = mongo.db.products.find()[:]
   return render_template('product/index.html',
-    products=products)
+  products=products)
+
+@app.route('/products/<product_id>/delete/', methods=['DELETE'])
+@login_required
+def product_delete(product_id):
+  """Delete record using HTTP DELETE, respond with JSON."""
+  result = mongo.db.products.delete_one({ "_id": ObjectId(product_id) })
+  if result.deleted_count == 0:
+    # Abort with Not Found, but with simple JSON response.
+    response = jsonify({'status': 'Not Found'})
+    response.status = 404
+    return response
+  return jsonify({'status': 'OK'})
+
+import bson
+
+@app.errorhandler(404)
+def error_not_found(error):
+  return render_template('error/not_found.html'), 404
+
+@app.errorhandler(bson.errors.InvalidId)
+def error_not_found(error):
+  return render_template('error/not_found.html'), 404
+
+from flask import render_template
+
+@app.route('/')
+def index():
+  return redirect(url_for('products_list'))
+
+from flask_login import LoginManager, current_user
+from flask_login import login_user, logout_user
+
+from forms import LoginForm
+from models import User
+
+app.config['SECRET_KEY'] = 'enydM2ANhdcoKwdVa0jWvEsbPFuQpMjf' # Create your own.
+app.config['SESSION_PROTECTION'] = 'strong'
+
+
+# Use Flask-Login to track current user in Flask's session.
+login_manager = LoginManager()
+login_manager.setup_app(app)
+login_manager.login_view = 'login'
+
+
+
+@login_manager.user_loader
+def load_user(user_id):
+  """Flask-Login hook to load a User instance from ID."""
+  u = mongo.db.users.find_one({"username": user_id})
+  if not u:
+        return None
+  return User(u['username'])
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
@@ -166,7 +181,7 @@ def login():
     username = form.username.data.lower().strip()
     password = form.password.data.lower().strip()
     user = mongo.db.users.find_one({"username": form.username.data})
-    if user and User.validate_login(user['password'], form.password.data):  
+    if user and User.validate_login(user['password'], form.password.data):
       user_obj = User(user['username'])
       login_user(user_obj)
       return redirect(url_for('products_list'))
@@ -180,10 +195,8 @@ def logout():
   logout_user()
   return redirect(url_for('products_list'))
 
-@app.errorhandler(404)
-def error_not_found(error):
-  return render_template('error/not_found.html'), 404
 
-@app.errorhandler(bson.errors.InvalidId)
-def error_not_found(error):
-  return render_template('error/not_found.html'), 404  
+
+
+if __name__ == '__main__':
+    app.run()
