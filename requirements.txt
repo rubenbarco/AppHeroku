@@ -3,4 +3,5 @@ Flask-Login
 Flask-Script
 WTForms
 Flask-PyMongo
+bson
 gunicorn
